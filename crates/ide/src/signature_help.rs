@@ -174,6 +174,9 @@ fn signature_help_for_call(
     match callable.kind() {
         hir::CallableKind::Function(func) => {
             res.doc = func.docs(db).map(Documentation::into_owned);
+            if func.is_const(db) {
+                format_to!(res.signature, "const ");
+            }
             if func.is_async(db) {
                 format_to!(res.signature, "async ");
             }
@@ -2661,6 +2664,20 @@ fn main() {
             expect![[r#"
                 async fn conn_mut<F: FnOnce() -> T, T>(f: F) -> Result<T, i32>
                                                        ^^^^
+            "#]],
+        );
+    }
+
+    #[test]
+    fn test_const_function() {
+        check(
+            r#"
+//- minicore: sized, fn
+const fn zero() -> i32 { 0 }
+fn main() { zero($0 }
+"#,
+            expect![[r#"
+                const fn zero() -> i32
             "#]],
         );
     }
